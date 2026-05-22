@@ -22,7 +22,11 @@
 1. 먼저 과제 템플릿을 본인 팀 저장소에 업로드합니다.
 2. 브라우저에서 아래 주소로 이동해 노트북을 엽니다. `USERNAME`, 저장소명, 브랜치명은 본인 또는 팀 환경에 맞게 바꿉니다. (브랜치가 `main`이면 URL의 `master`를 `main`으로 변경)
   ```python
+    # 예시
     https://colab.research.google.com/github/USERNAME/mnist-lab/blob/master/mnist_lab.ipynb
+
+    # 현재 주소
+    https://colab.research.google.com/github/YangSiJun528/WEEK13_mnist-lab/blob/main/mnist_lab.ipynb
   ```
 3. **런타임 설정**: 상단 메뉴 **런타임 → 런타임 유형 변경**에서 **Python 3**, CPU 또는 GPU를 선택합니다.
 4. **첫 셀 실행**: 노트북 맨 위의 **「1. 환경설정」** 코드 셀을 먼저 실행합니다.
