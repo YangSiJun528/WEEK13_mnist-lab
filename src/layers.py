@@ -33,7 +33,12 @@ class Affine:
             (batch_size, output_dim)
         """
         # TODO: backward에서 사용할 입력 x를 저장하고 x @ W + b를 반환하세요.
-        raise NotImplementedError("Affine.forward를 구현하세요.")
+        #raise NotImplementedError("Affine.forward를 구현하세요.")
+
+        self.x = x
+        out = np.dot(x, self.W) + self.b
+
+        return out
 
     def backward(self, dout):
         """
@@ -48,8 +53,16 @@ class Affine:
         """
         # TODO: self.dW, self.db, dx를 계산하세요.
         # 힌트: dW = x.T @ dout, db = batch 방향 합, dx = dout @ W.T
-        raise NotImplementedError("Affine.backward를 구현하세요.")
+        #raise NotImplementedError("Affine.backward를 구현하세요.")
 
+        #x,W,b 각각에 대한 gradient를 구함, 곱하기 역전파 상황이니 dx엔 W를, dW엔 x를 곱함
+        dx = np.dot(dout, self.W.T)
+        #가중치 W에 대한 gradient, W를 바꾸면 loss가 어떻게 변하는지 알려주는 값
+        self.dW = np.dot(self.x.T, dout)
+        #편향 b는 batch의 모든 데이터에 똑같이 더해졌기 때문에, batch방향으로 전부 더함
+        self.db = np.sum(dout, axis=0)
+
+        return dx
 
 class BatchNorm:
     """
@@ -84,7 +97,9 @@ class BatchNorm:
         """
         # TODO: train=True에서는 batch mean/var로 정규화하고 running 통계를 갱신하세요.
         # TODO: train=False에서는 running_mean/running_var를 사용하세요.
-        raise NotImplementedError("BatchNorm.forward를 구현하세요.")
+        #raise NotImplementedError("BatchNorm.forward를 구현하세요.")
+
+
 
     def backward(self, dout):
         """
