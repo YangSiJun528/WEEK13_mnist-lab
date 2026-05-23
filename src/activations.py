@@ -27,13 +27,17 @@ class ReLU:
             x와 같은 shape. x > 0인 위치만 원래 값을 유지합니다.
         """
         # TODO: x > 0 위치를 self.mask에 저장하고, 음수/0 위치는 0으로 바꾸세요.
+        # raise NotImplementedError("ReLU.forward를 구현하세요.")
+
+        #x = np.array([1,-2,3,0])이라면 self.mask는 [False, True, False, True] 로 저장
         self.mask = (x <= 0)
+        #원본 x를 수정하면 안되니 복사본 생성
         out = x.copy()
+        #self.mask에서 True였던 부분을 0으로 변경
         out[self.mask] = 0
 
         return out
 
-        # raise NotImplementedError("ReLU.forward를 구현하세요.")
 
     def backward(self, dout):
         """
@@ -44,7 +48,14 @@ class ReLU:
             ReLU 입력 x에 대한 gradient. forward 때 x <= 0이었던 위치는 0입니다.
         """
         # TODO: forward에서 저장한 self.mask를 이용해 gradient가 흐를 위치만 남기세요.
-        raise NotImplementedError("ReLU.backward를 구현하세요.")
+        # raise NotImplementedError("ReLU.backward를 구현하세요.")
+
+        #dout은 뒤에서 넘어온 gradient, self.mask 가 True였던 부분은 W를 바꿀 필요가 없으니 전달하지 않음
+        dout[self.mask] = 0
+        #0으로 바꾸고 return하기 위해 배열 하나 생성
+        dx = dout
+
+        return dx
 
 
 class Softmax:
