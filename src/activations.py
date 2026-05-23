@@ -76,7 +76,17 @@ class Softmax:
         """
         # TODO: 수치 안정성을 위해 row별 max를 뺀 뒤 softmax 확률을 계산하세요.
         # 힌트: np.max(..., axis=1, keepdims=True), np.exp, np.sum을 사용합니다.
-        raise NotImplementedError("Softmax.forward를 구현하세요.")
+        #raise NotImplementedError("Softmax.forward를 구현하세요.")
+
+        #overflow 방지하기 위해 각 행에서 가장 큰 값을 빼줌, 정규화 전처리
+        x = x - np.max(x, axis=1, keepdims=True)
+        #지수함수로 변경
+        exp_x = np.exp(x)
+        #출력값 계산
+        out = exp_x / np.sum(exp_x, axis=1, keepdims=True)
+
+        return out
+
 
     def backward(self, dout):
         """
@@ -84,4 +94,5 @@ class Softmax:
         여기서는 받은 gradient를 그대로 통과시킵니다.
         """
         # TODO: train()에서 만든 gradient를 그대로 반환하세요.
-        raise NotImplementedError("Softmax.backward를 구현하세요.")
+        #raise NotImplementedError("Softmax.backward를 구현하세요.")
+        return dout
