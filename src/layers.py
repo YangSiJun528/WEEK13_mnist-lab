@@ -62,6 +62,7 @@ class Affine:
         #편향 b는 batch의 모든 데이터에 똑같이 더해졌기 때문에, batch방향으로 전부 더함
         self.db = np.sum(dout, axis=0)
 
+        #W와 b는  현재 층이 가진 값들이므로 넘겨줄 필요가 없고, dx만 앞 레이어로 전달함
         return dx
 
 class BatchNorm:
