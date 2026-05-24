@@ -102,6 +102,7 @@ class BatchNorm:
 
 
 
+
     def backward(self, dout):
         """
         BatchNorm 입력 x, scale gamma, shift beta에 대한 gradient를 계산합니다.
@@ -137,9 +138,19 @@ class Dropout:
         """
         # TODO: train=True에서는 mask를 만들고 x에 곱하세요.
         # TODO: train=False에서는 x * (1 - drop_ratio)를 반환하세요.
-        raise NotImplementedError("Dropout.forward를 구현하세요.")
+        #raise NotImplementedError("Dropout.forward를 구현하세요.")
+    
+        #학습모드에선 x와 같은 shape의 랜덤 배열을 만들고, drop_ratio보다 큰 위치만 True
+        if train:
+            self.mask = np.random.rand(*x.shape) > self.drop_ratio
+            return x * self.mask
+        #추론모드에선 뉴런을 끄지 않고, 학습 때 살아남은 비율만큼 값을 줄여줌
+        else : 
+            return x * (1.0 - self.drop_ratio)
 
     def backward(self, dout):
         """forward에서 꺼졌던 뉴런 위치에는 gradient도 흘리지 않습니다."""
         # TODO: forward에서 만든 mask를 dout에 곱하세요.
-        raise NotImplementedError("Dropout.backward를 구현하세요.")
+        #raise NotImplementedError("Dropout.backward를 구현하세요.")
+        #그대로 전파, 꺼졌던 뉴런의 gradient도 막기 위해 mask를 곱해줌
+        return dout * self.mask
