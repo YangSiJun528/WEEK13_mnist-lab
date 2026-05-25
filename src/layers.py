@@ -100,7 +100,35 @@ class BatchNorm:
         # TODO: train=False에서는 running_mean/running_var를 사용하세요.
         #raise NotImplementedError("BatchNorm.forward를 구현하세요.")
 
+        if train:
+            #현재 batch의 평균
+            mu = np.mean(x, axis=0)
+            #x에서 평균을 뺀 값
+            xc = x - mu
+            #현재 batch의 분산
+            var = np.mean(xc ** 2, axis=0)
+            #현재 batch의 표준편차
+            std = np.sqrt(var + self.eps)
+            #a=xW+b를 표준화한 값
+            x_hat = xc / std
 
+            self.batch_size = x.shape[0]
+            self.xc = xc
+            self.x_hat = x_hat
+            self.std = std
+
+            #running_mean : 학습 중 여러 batch의 평균을 조금씩 누적해둔 값, 조금씩 갱신
+            self.running_mean = self.momentum * self.running_mean + (1 - self.momentum) * mu
+            self.running_var = self.momentum * self.running_var + (1 - self.momentum) * var
+        else:
+            #학습 중 저장해둔 평균을 뺌
+            xc = x - self.running_mean
+            #학습 중 저장해둔 분산으로 표준화
+            x_hat = xc / np.sqrt(self.running_var + self.eps)
+
+        #표준화된 값을 다시 조정, gamma는 scale, beta는 shift역할
+        out = self.gamma * x_hat + self.beta
+        return out
 
 
     def backward(self, dout):
@@ -115,7 +143,23 @@ class BatchNorm:
         """
         # TODO: self.dbeta, self.dgamma, dx를 계산하세요.
         # 힌트: 먼저 dbeta와 dgamma shape가 beta/gamma와 같은지 확인합니다.
-        raise NotImplementedError("BatchNorm.backward를 구현하세요.")
+        #raise NotImplementedError("BatchNorm.backward를 구현하세요.")
+
+        #batchNorm 결과를 다음 계층으로 넘김. beta에 대한 gradient, 더하기 역전파라 batch 방향으로 전부 더함
+        self.dbeta = np.sum(dout, axis=0)
+        #gamma에 대한 gradient, gamma는 x_hat에 곱해졌기 때문에  x_hat * dout을 더함
+        self.dgamma = np.sum(self.x_hat * dout, axis=0)
+        #forward에서 hat * gamma였으므로 역전파에선 gamma를 곱함
+        dx_hat = dout * self.gamma
+        
+        dxc = dx_hat / self.std
+        dstd = -np.sum(dx_hat * self.xc / (self.std ** 2), axis=0)
+        dvar = 0.5 * dstd / self.std
+        dxc += (2.0 / self.batch_size) * self.xc * dvar
+        dmu = np.sum(dxc, axis=0)
+        dx = dxc - dmu / self.batch_size
+
+        return dx
 
 
 class Dropout:
