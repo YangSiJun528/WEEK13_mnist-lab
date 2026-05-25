@@ -43,7 +43,7 @@ class NeuralNetwork:
         hidden_size2 = 256
         output_size = 10
 
-        # He 초기화: ReLU와 잘 맞는 초기화
+        #He초기화 사용
         self.params["W1"] = np.random.randn(input_size, hidden_size1) * np.sqrt(2.0 / input_size)
         self.params["b1"] = np.zeros(hidden_size1)
 
@@ -117,6 +117,29 @@ class NeuralNetwork:
         """
         # TODO: layer를 역순으로 통과시키고 Affine/BatchNorm의 gradient를 self.grads에 모으세요.
         #raise NotImplementedError("NeuralNetwork.backward를 구현하세요.")
+
+        dout = self.softmax.backward(dout)
+
+        layers = list(self.layers.values())
+        layers.reverse()
+
+        for layer in layers:
+            dout = layer.backward(dout)
+
+        self.grads["W1"] = self.layers["Affine1"].dW
+        self.grads["b1"] = self.layers["Affine1"].db
+        self.grads["W2"] = self.layers["Affine2"].dW
+        self.grads["b2"] = self.layers["Affine2"].db
+        self.grads["W3"] = self.layers["Affine3"].dW
+        self.grads["b3"] = self.layers["Affine3"].db
+
+        if "BatchNorm1" in self.layers:
+            self.grads["gamma1"] = self.layers["BatchNorm1"].dgamma
+            self.grads["beta1"] = self.layers["BatchNorm1"].dbeta
+
+        if "BatchNorm2" in self.layers:
+            self.grads["gamma2"] = self.layers["BatchNorm2"].dgamma
+            self.grads["beta2"] = self.layers["BatchNorm2"].dbeta
 
     def loss(self, x, y):
         """현재 모델의 예측 확률을 만든 뒤 cross entropy loss를 반환합니다."""

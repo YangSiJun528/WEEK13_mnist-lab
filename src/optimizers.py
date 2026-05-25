@@ -41,4 +41,27 @@ class Adam:
     def update(self, params, grads):
         """Adam 공식에 따라 params dict의 모든 파라미터를 갱신합니다."""
         # TODO: m, v 이동평균과 bias correction을 사용해 params를 업데이트하세요.
-        raise NotImplementedError("Adam.update를 구현하세요.")
+        #raise NotImplementedError("Adam.update를 구현하세요.")
+        
+        beta1 = 0.9
+        beta2 = 0.999
+        eps = 1e-7
+
+        #최초 업데이트시
+        if not self.m:
+            for key, value in params.items():
+                self.m[key] = np.zeros_like(value)
+                self.v[key] = np.zeros_like(value)
+        #업데이트 횟수 증가
+        self.t += 1
+        #파라미터 업데이트
+        for key in params.keys():
+            #이전 평균90%반영, 현재 gradient 10%반영
+            self.m[key] = beta1 * self.m[key] + (1 - beta1) * grads[key]
+            #이전 평균 99.9% 반영, 현재 gradient 제곱을 0.1% 반영
+            self.v[key] = beta2 * self.v[key] + (1 - beta2) * (grads[key] ** 2)
+            #초반에 m,v가 0에서 시작해서 너무 작게 잡히는 문제를 보정
+            m_hat = self.m[key] / (1 - beta1 ** self.t)
+            v_hat = self.v[key] / (1 - beta2 ** self.t)
+            #파라미터 업데이트, SGD처럼 그냥 gradient를 빼는 게 아니라, m_hat을 sqrt(v_hat)으로 나눠서 더 안정적
+            params[key] -= self.lr * m_hat / (np.sqrt(v_hat) + eps)
