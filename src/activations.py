@@ -18,6 +18,9 @@ class ReLU:
     forward에서 만든 mask는 backward 때 "어느 위치로 gradient를 흘릴지" 결정하는 데 사용됩니다.
     """
 
+    def __init__(self):
+        self.mask = None
+
     def forward(self, x):
         """
         Args:
@@ -26,8 +29,12 @@ class ReLU:
         Returns:
             x와 같은 shape. x > 0인 위치만 원래 값을 유지합니다.
         """
-        # TODO: x > 0 위치를 self.mask에 저장하고, 음수/0 위치는 0으로 바꾸세요.
-        raise NotImplementedError("ReLU.forward를 구현하세요.")
+        # 0보다 작거나 같은 idx를 mask에 저장
+        # out(x의 복사)에 mask에 해당되는 요소를 0으로 덮어씌우기
+        self.mask = (x <= 0)
+        out = x.copy()
+        out[self.mask] = 0
+        return out
 
     def backward(self, dout):
         """
@@ -37,8 +44,10 @@ class ReLU:
         Returns:
             ReLU 입력 x에 대한 gradient. forward 때 x <= 0이었던 위치는 0입니다.
         """
-        # TODO: forward에서 저장한 self.mask를 이용해 gradient가 흐를 위치만 남기세요.
-        raise NotImplementedError("ReLU.backward를 구현하세요.")
+        # 순전파 시 값이 0 이하였던 요소들을 0으로 처리
+        dout[self.mask] = 0
+        dx = dout # 이게 의미가 있는건가?
+        return dx
 
 
 class Softmax:
@@ -59,7 +68,11 @@ class Softmax:
         """
         # TODO: 수치 안정성을 위해 row별 max를 뺀 뒤 softmax 확률을 계산하세요.
         # 힌트: np.max(..., axis=1, keepdims=True), np.exp, np.sum을 사용합니다.
-        raise NotImplementedError("Softmax.forward를 구현하세요.")
+        c = np.max(x, axis=1, keepdims=True)  # 일단 쓰긴 했는데 이게 무슨 의미일까... 맞긴 하나?
+        exp_x = np.exp(x - c)  # 오버플로 대책
+        sum_exp_x = np.sum(exp_x)
+        out = exp_x / sum_exp_x
+        return out
 
     def backward(self, dout):
         """
@@ -67,4 +80,5 @@ class Softmax:
         여기서는 받은 gradient를 그대로 통과시킵니다.
         """
         # TODO: train()에서 만든 gradient를 그대로 반환하세요.
-        raise NotImplementedError("Softmax.backward를 구현하세요.")
+        # raise NotImplementedError("Softmax.backward를 구현하세요.")
+        return dout # 그대로 반환하라니까 일단...
