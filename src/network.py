@@ -22,7 +22,7 @@ class NeuralNetwork:
     가중치 초기화: He 또는 Xavier 중 선택.
     """
 
-    def __init__(self, use_batchnorm=True, use_dropout=True, dropout_ratio=0.5):
+    def __init__(self, use_batchnorm=True, use_dropout=True, dropout_ratio=0.5, init_method="he"):
         """
         Args:
             use_batchnorm: 은닉층마다 BatchNorm을 넣을지 여부
@@ -43,14 +43,25 @@ class NeuralNetwork:
         hidden_size2 = 256
         output_size = 10
 
-        #He초기화 사용
-        self.params["W1"] = np.random.randn(input_size, hidden_size1) * np.sqrt(2.0 / input_size)
+        def init_weight(fan_in, fan_out):
+            if init_method == "he":
+                scale = np.sqrt(2.0 / fan_in)
+            elif init_method == "xavier":
+                scale = np.sqrt(2.0 / (fan_in + fan_out))
+            elif init_method == "normal":
+                scale = 0.01
+            else:
+                raise ValueError("init_method는 'he', 'xavier', 'normal' 중 하나여야 합니다.")
+
+            return np.random.randn(fan_in, fan_out) * scale
+
+        self.params["W1"] = init_weight(input_size, hidden_size1)
         self.params["b1"] = np.zeros(hidden_size1)
 
-        self.params["W2"] = np.random.randn(hidden_size1, hidden_size2) * np.sqrt(2.0 / hidden_size1)
+        self.params["W2"] = init_weight(hidden_size1, hidden_size2)
         self.params["b2"] = np.zeros(hidden_size2)
 
-        self.params["W3"] = np.random.randn(hidden_size2, output_size) * np.sqrt(2.0 / hidden_size2)
+        self.params["W3"] = init_weight(hidden_size2, output_size)
         self.params["b3"] = np.zeros(output_size)
 
         self.layers["Affine1"] = Affine(self.params["W1"], self.params["b1"])
