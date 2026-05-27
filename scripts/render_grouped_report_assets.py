@@ -181,14 +181,72 @@ def render_line(grouped, group_key, metric, filename, y_label, lower=None, upper
 
 
 def render_gap(grouped):
-    render_line(
-        grouped,
-        "regularization_bn_dropout",
-        "gap",
-        "regularization_bn_dropout_train_val_gap.svg",
-        "train - validation accuracy gap (%p)",
-        lower=0,
+    strategies = GROUPS["regularization_bn_dropout"]
+    y_min, y_max = 95, 100
+    width, height = 1040, 440
+    panel_y, panel_w, panel_h = 92, 245, 230
+    panel_gap = 70
+    start_x = 78
+    lines = svg_start(width, height)
+    lines.append('<text x="78" y="34" class="title">Train vs validation accuracy - gap context</text>')
+    lines.append(
+        '<text x="78" y="56" class="small">'
+        'A larger gap is only risky when validation accuracy stalls or validation loss worsens.'
+        '</text>'
     )
+
+    legend_x, legend_y = 760, 38
+    lines.append(f'<line x1="{legend_x}" y1="{legend_y}" x2="{legend_x+28}" y2="{legend_y}" stroke="#6b7280" stroke-width="2.2" stroke-dasharray="5 4"/>')
+    lines.append(f'<text x="{legend_x+36}" y="{legend_y+4}" class="small">train accuracy</text>')
+    lines.append(f'<line x1="{legend_x}" y1="{legend_y+22}" x2="{legend_x+28}" y2="{legend_y+22}" stroke="#111827" stroke-width="2.4"/>')
+    lines.append(f'<text x="{legend_x+36}" y="{legend_y+26}" class="small">validation accuracy</text>')
+
+    for index, strategy in enumerate(strategies):
+        x = start_x + index * (panel_w + panel_gap)
+        color = COLORS[strategy]
+        rows = grouped[strategy]
+        lines.append(f'<text x="{x}" y="{panel_y-18}" class="label">{html.escape(DISPLAY_NAMES[strategy])}</text>')
+        lines.append(f'<rect x="{x}" y="{panel_y}" width="{panel_w}" height="{panel_h}" fill="#ffffff" stroke="#d1d5db"/>')
+
+        for tick in [95, 96, 97, 98, 99, 100]:
+            py = scale(tick, y_min, y_max, panel_y + panel_h, panel_y)
+            lines.append(f'<line x1="{x}" y1="{py:.1f}" x2="{x+panel_w}" y2="{py:.1f}" class="grid"/>')
+            if index == 0:
+                lines.append(f'<text x="{x-8}" y="{py+4:.1f}" text-anchor="end" class="small">{tick}</text>')
+
+        for epoch in [1, 10, 20]:
+            px = scale(epoch, 1, 20, x, x + panel_w)
+            lines.append(f'<text x="{px:.1f}" y="{panel_y+panel_h+20}" text-anchor="middle" class="small">{epoch}</text>')
+
+        train_points = []
+        val_points = []
+        for row in rows:
+            px = scale(row["epoch"], 1, 20, x, x + panel_w)
+            train_py = scale(row["train_acc"], y_min, y_max, panel_y + panel_h, panel_y)
+            val_py = scale(row["val_acc"], y_min, y_max, panel_y + panel_h, panel_y)
+            train_points.append((px, train_py))
+            val_points.append((px, val_py))
+
+        gap_polygon = train_points + list(reversed(val_points))
+        polygon_points = " ".join(f"{px:.1f},{py:.1f}" for px, py in gap_polygon)
+        lines.append(f'<polygon points="{polygon_points}" fill="{color}" opacity="0.12"/>')
+
+        train_line = " ".join(f"{px:.1f},{py:.1f}" for px, py in train_points)
+        val_line = " ".join(f"{px:.1f},{py:.1f}" for px, py in val_points)
+        lines.append(f'<polyline points="{train_line}" fill="none" stroke="#6b7280" stroke-width="2.2" stroke-dasharray="5 4"/>')
+        lines.append(f'<polyline points="{val_line}" fill="none" stroke="{color}" stroke-width="2.6"/>')
+
+        final = rows[-1]
+        gap = final["train_acc"] - final["val_acc"]
+        lines.append(f'<text x="{x}" y="{panel_y+panel_h+48}" class="small">final val {final["val_acc"]:.2f}%</text>')
+        lines.append(f'<text x="{x+128}" y="{panel_y+panel_h+48}" class="small">gap {gap:.2f}%p</text>')
+
+    lines.append(f'<text x="{start_x + panel_w * 1.5 + panel_gap}" y="{height-22}" text-anchor="middle" class="label">epoch</text>')
+    lines.append(
+        f'<text x="24" y="{panel_y + panel_h/2}" transform="rotate(-90 24 {panel_y + panel_h/2})" '
+        f'text-anchor="middle" class="label">accuracy (%)</text>'
+    )
+    write_svg("regularization_bn_dropout_train_val_gap.svg", lines)
 
 
 def render_bar_final_gap(grouped):

@@ -194,13 +194,13 @@ use_batchnorm,use_dropout,dropout_ratio,init_method
 
 ![BatchNorm Dropout validation loss](report_assets/regularization_bn_dropout_val_loss.svg)
 
-![BatchNorm Dropout train validation gap](report_assets/regularization_bn_dropout_train_val_gap.svg)
+![BatchNorm Dropout train validation accuracy gap context](report_assets/regularization_bn_dropout_train_val_gap.svg)
 
 ![BatchNorm Dropout final gap](report_assets/regularization_bn_dropout_final_gap.svg)
 
-소결: BatchNorm 유무에 따른 정확도 차이는 작았다. 반면 Dropout 제거는 train accuracy를 높게 유지했지만 validation loss와 train-validation gap을 키웠다.
+소결: BatchNorm 유무에 따른 정확도 차이는 작았다. 반면 Dropout 제거는 train accuracy를 빠르게 끌어올렸지만 validation loss가 가장 높게 남았다.
 
-과적합은 epoch별 gap에서 더 명확하게 보인다. `no_dropout`은 1 epoch부터 train-validation accuracy gap이 1.20%p였고, 3 epoch부터 1.73%p까지 벌어진 뒤 대부분의 후반 구간에서 1.6%p 이상을 유지했다. 반면 `adam_baseline`은 5 epoch 0.92%p, 10 epoch 1.30%p, 20 epoch 1.38%p로 증가 폭이 더 작았다. 즉 Dropout을 제거하면 학습 데이터에는 매우 빠르게 맞지만, 검증 데이터와의 차이가 초반부터 크게 벌어진다.
+위 그래프는 gap을 validation accuracy 흐름과 함께 보여준다. `adam_baseline`과 `no_batchnorm`도 학습이 진행되면서 train-validation gap은 늘어나지만, validation accuracy가 계속 개선되므로 gap 증가만으로 과적합이라고 보기는 어렵다. 반면 `no_dropout`은 1 epoch부터 gap이 1.20%p로 컸고, 3 epoch에는 1.73%p까지 벌어졌다. 이후 train accuracy는 거의 100%에 가까워졌지만 validation loss는 최종 0.0773으로 가장 높았다. 따라서 Dropout을 제거하면 학습 데이터에는 매우 빠르게 맞지만, 검증 데이터 기준의 일반화는 상대적으로 나빠진다.
 
 ---
 
@@ -238,7 +238,7 @@ use_batchnorm,use_dropout,dropout_ratio,init_method
 
 - Optimizer 비교에서는 Adam이 SGD보다 빠르게 수렴했다. SGD lr=0.01은 20 epoch 기준 validation accuracy 94.42%로 97%에 도달하지 못했다.
 - BatchNorm을 제거해도 accuracy 손실은 크지 않았지만, validation loss는 baseline보다 높았다. 이번 결과에서는 BatchNorm의 차이가 accuracy보다 loss에서 더 뚜렷했다.
-- Dropout 제거는 train accuracy를 높게 유지했지만 validation loss와 train-validation gap을 키웠다. 특히 3 epoch 이후 gap이 1.7%p 근처까지 벌어져 과적합 경향이 가장 분명했다.
+- Dropout 제거는 train accuracy를 빠르게 높였지만 validation loss가 가장 높았다. train-validation gap도 초반부터 크게 벌어져 과적합 경향이 가장 분명했다.
 - Learning rate 비교에서는 `adam_baseline`이 final validation accuracy 98.50%로 가장 높았다. 다만 `adam_lr_decay`도 98.37%로 차이가 0.13%p에 그쳤고, train-validation gap은 1.17%p로 baseline의 1.38%p보다 작았다.
 - 전체 최고 validation accuracy는 `no_batchnorm`의 98.52%였지만, `adam_baseline`의 98.50%와 0.02%p 차이에 불과하다. 이 차이만으로 BatchNorm 제거가 우세하다고 보기는 어렵다.
 
