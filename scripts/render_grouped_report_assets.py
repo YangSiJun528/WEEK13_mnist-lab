@@ -25,6 +25,15 @@ COLORS = {
     "adam_lr_decay": "#0891b2",
 }
 
+DISPLAY_NAMES = {
+    "adam_baseline": "Adam baseline",
+    "sgd_lr_0_01": "SGD lr=0.01",
+    "no_batchnorm": "No BatchNorm",
+    "no_dropout": "No Dropout",
+    "adam_lr_0_01": "Adam lr=0.01",
+    "adam_lr_decay": "Adam lr decay",
+}
+
 GROUPS = {
     "optimizer_sgd_vs_adam": ["sgd_lr_0_01", "adam_baseline"],
     "regularization_bn_dropout": ["adam_baseline", "no_batchnorm", "no_dropout"],
@@ -185,13 +194,29 @@ def render_gap(grouped):
 def render_bar_final_gap(grouped):
     strategies = GROUPS["regularization_bn_dropout"]
     values = [grouped[strategy][-1]["gap"] for strategy in strategies]
-    y_min, y_max = padded_range(values, lower=0)
-    width, height = 820, 390
-    x, y, w, h = 82, 62, 620, 235
+    y_min, y_max = 0, max(2.0, max(values) * 1.18)
+    width, height = 860, 430
+    x, y, w, h = 88, 70, 680, 270
     lines = svg_start(width, height)
-    draw_axes(lines, x, y, w, h, "BatchNorm and Dropout - final gap", "gap (%p)", y_min, y_max)
+    lines.append(f'<text x="{x}" y="34" class="title">BatchNorm and Dropout - final gap</text>')
+    lines.append(f'<line x1="{x}" y1="{y+h}" x2="{x+w}" y2="{y+h}" class="axis"/>')
+    lines.append(f'<line x1="{x}" y1="{y}" x2="{x}" y2="{y+h}" class="axis"/>')
+
+    ticks = [0, 0.5, 1.0, 1.5, 2.0]
+    for value in ticks:
+        if value > y_max:
+            continue
+        py = scale(value, y_min, y_max, y + h, y)
+        lines.append(f'<line x1="{x}" y1="{py:.1f}" x2="{x+w}" y2="{py:.1f}" class="grid"/>')
+        lines.append(f'<text x="{x-10}" y="{py+4:.1f}" text-anchor="end" class="small">{value:.1f}</text>')
+
+    lines.append(
+        f'<text x="{x-58}" y="{y+h/2}" transform="rotate(-90 {x-58} {y+h/2})" '
+        f'text-anchor="middle" class="label">train - validation accuracy gap (%p)</text>'
+    )
+
     group_w = w / len(strategies)
-    bar_w = 48
+    bar_w = 72
     for index, strategy in enumerate(strategies):
         value = grouped[strategy][-1]["gap"]
         cx = x + group_w * index + group_w / 2
@@ -201,8 +226,9 @@ def render_bar_final_gap(grouped):
             f'<rect x="{bx:.1f}" y="{by:.1f}" width="{bar_w}" height="{y+h-by:.1f}" '
             f'fill="{COLORS[strategy]}" rx="4"/>'
         )
-        lines.append(f'<text x="{cx:.1f}" y="{by-6:.1f}" text-anchor="middle" class="small">{value:.2f}</text>')
-        lines.append(f'<text x="{cx:.1f}" y="{y+h+24}" text-anchor="middle" class="small">{html.escape(strategy)}</text>')
+        lines.append(f'<text x="{cx:.1f}" y="{by-10:.1f}" text-anchor="middle" class="small">{value:.2f}%p</text>')
+        lines.append(f'<text x="{cx:.1f}" y="{y+h+28}" text-anchor="middle" class="label">{html.escape(DISPLAY_NAMES[strategy])}</text>')
+
     write_svg("regularization_bn_dropout_final_gap.svg", lines)
 
 
