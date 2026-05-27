@@ -44,6 +44,7 @@ flowchart TD
     I[Input: 784 features]
 
     subgraph H1[Hidden block 1: 512 units]
+        direction LR
         H1A[Affine 784 to 512]
         H1B[BatchNorm]
         H1C[ReLU]
@@ -54,6 +55,7 @@ flowchart TD
     end
 
     subgraph H2[Hidden block 2: 256 units]
+        direction LR
         H2A[Affine 512 to 256]
         H2B[BatchNorm]
         H2C[ReLU]
@@ -64,6 +66,7 @@ flowchart TD
     end
 
     subgraph O[Output block]
+        direction LR
         OA[Affine 256 to 10]
         OS[Softmax]
         OA --> OS
