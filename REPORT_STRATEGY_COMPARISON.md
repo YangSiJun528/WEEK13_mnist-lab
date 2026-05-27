@@ -34,28 +34,32 @@ MNIST 10-class 분류를 **NumPy만으로 구현한 신경망**으로 수행하�
 기본 구조는 `784 -> 512 -> 256 -> 10`이다. 비교 전략에 따라 optimizer, learning rate, BatchNorm 사용 여부, Dropout 사용 여부만 바꾼다.
 
 ```mermaid
-flowchart LR
-    Input["Input<br/>784 features"]
+flowchart TB
+    Input["Input: 784 features"]
 
-    subgraph Model["MNIST classifier"]
+    subgraph Hidden1["Hidden block 1 (512 units)"]
         direction LR
-
-        subgraph Hidden1["Hidden block 1<br/>512 units"]
-            direction LR
-            A1["Affine<br/>784 -> 512"] --> BN1["BatchNorm"] --> R1["ReLU"] --> D1["Dropout"]
-        end
-
-        subgraph Hidden2["Hidden block 2<br/>256 units"]
-            direction LR
-            A2["Affine<br/>512 -> 256"] --> BN2["BatchNorm"] --> R2["ReLU"] --> D2["Dropout"]
-        end
-
-        Out["Affine<br/>256 -> 10"] --> Softmax["Softmax"]
+        H1A["Affine 784 -> 512"] --> H1B["BatchNorm"] --> H1C["ReLU"] --> H1D["Dropout"]
     end
 
-    Input --> A1
-    D1 --> A2
-    D2 --> Out
+    subgraph Hidden2["Hidden block 2 (256 units)"]
+        direction LR
+        H2A["Affine 512 -> 256"] --> H2B["BatchNorm"] --> H2C["ReLU"] --> H2D["Dropout"]
+    end
+
+    subgraph Output["Output block"]
+        direction LR
+        OA["Affine 256 -> 10"] --> OS["Softmax"]
+    end
+
+    Input --> H1A
+    H1D --> H2A
+    H2D --> OA
+    OS --> Prediction["Prediction: 10 classes"]
+
+    style Hidden1 fill:#f8fafc,stroke:#64748b,stroke-width:1px
+    style Hidden2 fill:#f8fafc,stroke:#64748b,stroke-width:1px
+    style Output fill:#f8fafc,stroke:#64748b,stroke-width:1px
 ```
 
 ---
