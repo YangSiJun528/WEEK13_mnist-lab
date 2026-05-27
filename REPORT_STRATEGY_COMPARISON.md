@@ -35,31 +35,38 @@ MNIST 10-class 분류를 **NumPy만으로 구현한 신경망**으로 수행하�
 
 ```mermaid
 flowchart TD
-    Input["Input: 784 features"]
+    I[Input: 784 features]
 
-    subgraph Hidden1["Hidden block 1 (512 units)"]
-        direction LR
-        H1A["Affine 784 -> 512"] --> H1B["BatchNorm"] --> H1C["ReLU"] --> H1D["Dropout"]
+    subgraph H1[Hidden block 1: 512 units]
+        H1A[Affine 784 to 512]
+        H1B[BatchNorm]
+        H1C[ReLU]
+        H1D[Dropout]
+        H1A --> H1B
+        H1B --> H1C
+        H1C --> H1D
     end
 
-    subgraph Hidden2["Hidden block 2 (256 units)"]
-        direction LR
-        H2A["Affine 512 -> 256"] --> H2B["BatchNorm"] --> H2C["ReLU"] --> H2D["Dropout"]
+    subgraph H2[Hidden block 2: 256 units]
+        H2A[Affine 512 to 256]
+        H2B[BatchNorm]
+        H2C[ReLU]
+        H2D[Dropout]
+        H2A --> H2B
+        H2B --> H2C
+        H2C --> H2D
     end
 
-    subgraph Output["Output block"]
-        direction LR
-        OA["Affine 256 -> 10"] --> OS["Softmax"]
+    subgraph O[Output block]
+        OA[Affine 256 to 10]
+        OS[Softmax]
+        OA --> OS
     end
 
-    Input --> H1A
+    I --> H1A
     H1D --> H2A
     H2D --> OA
-    OS --> Prediction["Prediction: 10 classes"]
-
-    style Hidden1 fill:#f8fafc,stroke:#64748b,stroke-width:1px
-    style Hidden2 fill:#f8fafc,stroke:#64748b,stroke-width:1px
-    style Output fill:#f8fafc,stroke:#64748b,stroke-width:1px
+    OS --> P[Prediction: 10 classes]
 ```
 
 ---
