@@ -135,6 +135,17 @@ SGD를 제외한 Adam 기반 실험은 모두 98% 이상의 validation accuracy�
 
 ## 5. 비교 실험
 
+비교 실험은 모델 구조 전체를 바꾸기보다, 학습 결과에 영향을 줄 가능성이 큰 요소를 하나씩 분리해 확인하는 방식으로 구성했습니다.
+
+| 비교 항목 | 비교 대상 | 확인하려는 점 |
+| --- | --- | --- |
+| Optimizer | SGD vs Adam | 같은 구조에서 어떤 optimizer가 20 epoch 안에 더 빠르게 수렴하는지 |
+| BatchNorm | BatchNorm on vs off | BatchNorm이 accuracy와 validation loss 안정성에 주는 영향 |
+| Dropout | Dropout on vs off | Dropout이 과적합 속도와 validation/test 성능 정체에 주는 영향 |
+| Learning rate | 0.001, 0.01, decay | 학습률 크기와 감소 전략이 최종 정확도와 일반화 gap에 주는 영향 |
+
+모든 비교에서 ReLU와 He 초기화는 고정했습니다. 따라서 아래 실험은 모델의 기본 표현력 차이보다 optimizer, 정규화, 학습률 설정의 차이를 보는 데 초점을 둡니다.
+
 ### 5.1 SGD vs Adam 비교
 
 | strategy | optimizer | lr | BatchNorm | Dropout |
