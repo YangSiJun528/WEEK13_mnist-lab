@@ -73,15 +73,15 @@ MNIST 10-class 분류를 **NumPy만으로 구현한 신경망**으로 수행하�
 
 ## 4. 실행 및 기록 방식
 
-실행은 Google Colab에서 `mnist_lab_for_test.ipynb`의 비교 실험 셀을 실행한다. 로컬에서는 학습을 실행하지 않는다.
+실행은 Google Colab에서 `mnist_lab_for_test.ipynb`의 비교 실험 셀로 수행했다. 로컬에서는 학습을 실행하지 않았고, Colab에서 생성된 결과 파일을 저장소의 `experiment_logs/`, `report_assets/`로 옮겼다.
 
 노트북은 실행 결과를 다음 파일로 저장한다.
 
 | 파일 | 내용 |
 | --- | --- |
-| `experiment_logs/grouped_strategy_run_<timestamp>.txt` | 사람이 읽을 수 있는 전체 epoch 로그 |
-| `experiment_logs/grouped_strategy_run_<timestamp>.csv` | strategy, epoch, lr, loss, accuracy, params 등 구조화 로그 |
-| `experiment_logs/grouped_strategy_summary_<timestamp>.md` | 전체 비교 수치표 |
+| `experiment_logs/grouped_strategy_run_20260527-115521.txt` | 사람이 읽을 수 있는 전체 epoch 로그 |
+| `experiment_logs/grouped_strategy_run_20260527-115521.csv` | strategy, epoch, lr, loss, accuracy, params 등 구조화 로그 |
+| `experiment_logs/grouped_strategy_summary_20260527-115521.md` | 전체 비교 수치표 |
 | `report_assets/*.svg` | 리포트에 붙일 그룹별 비교 그래프 |
 
 CSV에는 다음 항목이 기록된다.
@@ -95,16 +95,18 @@ use_batchnorm,use_dropout,dropout_ratio,init_method
 
 ## 5. 전체 비교
 
-전체 비교는 그래프 없이 수치표로만 정리한다. Colab 실행 후 `grouped_strategy_summary_<timestamp>.md`의 표를 아래에 붙인다.
+전체 비교는 그래프 없이 수치표로만 정리한다.
 
 | strategy | optimizer | final val acc | best val acc | best epoch | train acc | val loss | final lr | params | BN | Dropout |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| `adam_baseline` | Adam | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | 0.001000 | 537,354 | True | True |
-| `sgd_lr_0_01` | SGD | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | 0.010000 | 537,354 | True | True |
-| `no_batchnorm` | Adam | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | 0.001000 | 535,818 | False | True |
-| `no_dropout` | Adam | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | 0.001000 | 537,354 | True | False |
-| `adam_lr_0_01` | Adam | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | 0.010000 | 537,354 | True | True |
-| `adam_lr_decay` | Adam | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | 537,354 | True | True |
+| `adam_baseline` | Adam | 98.50% | 98.50% | 20 | 99.88% | 0.0499 | 0.001000 | 537,354 | True | True |
+| `sgd_lr_0_01` | SGD | 94.42% | 94.53% | 18 | 94.62% | 0.1812 | 0.010000 | 537,354 | True | True |
+| `no_batchnorm` | Adam | 98.45% | 98.52% | 14 | 99.78% | 0.0572 | 0.001000 | 535,818 | False | True |
+| `no_dropout` | Adam | 98.17% | 98.36% | 16 | 99.88% | 0.0773 | 0.001000 | 537,354 | True | False |
+| `adam_lr_0_01` | Adam | 98.31% | 98.38% | 18 | 99.71% | 0.0578 | 0.010000 | 537,354 | True | True |
+| `adam_lr_decay` | Adam | 98.37% | 98.41% | 12 | 99.54% | 0.0515 | 0.000001 | 537,354 | True | True |
+
+전체 결과에서 SGD를 제외한 Adam 기반 실험은 모두 98% 이상의 validation accuracy를 달성했다. SGD는 같은 20 epoch 안에서는 94.42%에 머물러, 이번 설정에서는 Adam보다 수렴 속도가 확실히 느렸다.
 
 ---
 
@@ -117,15 +119,18 @@ use_batchnorm,use_dropout,dropout_ratio,init_method
 | `sgd_lr_0_01` | SGD | 0.01 | on | on |
 | `adam_baseline` | Adam | 0.001 | on | on |
 
-확인할 점:
+결과 요약:
 
-- Adam이 SGD보다 같은 epoch 안에서 더 빠르게 validation loss를 낮추는가
-- SGD가 더 느리지만 안정적으로 수렴하는가
-- 최종 정확도뿐 아니라 epoch별 loss 감소 속도를 함께 비교한다.
+- `adam_baseline`: final validation accuracy 98.50%, final validation loss 0.0499
+- `sgd_lr_0_01`: final validation accuracy 94.42%, final validation loss 0.1812
+- Adam은 20 epoch 안에서 SGD보다 validation accuracy가 4.08%p 높고, validation loss도 크게 낮았다.
+- SGD는 train accuracy 94.62%, validation accuracy 94.42%로 train-validation gap은 작지만, 전체 수렴 수준이 낮다.
 
 ![SGD vs Adam validation accuracy](report_assets/optimizer_sgd_vs_adam_val_accuracy.svg)
 
 ![SGD vs Adam validation loss](report_assets/optimizer_sgd_vs_adam_val_loss.svg)
+
+해석: 같은 BatchNorm, Dropout, He 초기화 조건에서 optimizer만 바꾸면 Adam이 훨씬 빠르게 수렴했다. SGD lr=0.01은 안정적으로 오르지만 20 epoch 안에서는 충분히 높은 정확도에 도달하지 못했다. 따라서 이번 구조에서는 최종 모델 후보로 Adam을 쓰는 것이 적절하다.
 
 ---
 
@@ -139,17 +144,21 @@ use_batchnorm,use_dropout,dropout_ratio,init_method
 | `no_batchnorm` | off | on | BatchNorm 효과 확인 |
 | `no_dropout` | on | off | Dropout 일반화 효과 확인 |
 
-확인할 점:
+결과 요약:
 
-- BatchNorm 제거 시 validation loss가 더 흔들리거나 수렴이 느려지는가
-- Dropout 제거 시 train accuracy와 validation accuracy 차이가 커지는가
-- `no_dropout`은 train loss가 빠르게 내려가도 validation loss가 높아지는 과적합 패턴이 있는지 확인한다.
+- `adam_baseline`: final validation accuracy 98.50%, final validation loss 0.0499
+- `no_batchnorm`: final validation accuracy 98.45%, best validation accuracy 98.52%, final validation loss 0.0572
+- `no_dropout`: final validation accuracy 98.17%, final validation loss 0.0773, final train-validation gap 1.71%p
+- BatchNorm을 제거해도 최고 정확도는 98.52%까지 도달했지만, 최종 loss는 baseline보다 높았다.
+- Dropout을 제거하면 train loss가 매우 낮아지지만 validation loss가 가장 높아져 과적합 경향이 뚜렷했다.
 
 ![BatchNorm Dropout validation accuracy](report_assets/regularization_bn_dropout_val_accuracy.svg)
 
 ![BatchNorm Dropout validation loss](report_assets/regularization_bn_dropout_val_loss.svg)
 
 ![BatchNorm Dropout train validation gap](report_assets/regularization_bn_dropout_train_val_gap.svg)
+
+해석: BatchNorm 유무는 최종 정확도 차이가 크지 않았지만, baseline이 더 낮은 validation loss로 안정적인 결과를 냈다. Dropout 제거는 train accuracy는 높게 유지하지만 validation accuracy와 loss가 나빠져 일반화에는 불리했다.
 
 ---
 
@@ -163,11 +172,13 @@ use_batchnorm,use_dropout,dropout_ratio,init_method
 | `adam_lr_0_01` | Adam | 0.01 고정 | 큰 학습률 |
 | `adam_lr_decay` | Adam | `0.01 * 0.6^epoch` | 큰 lr로 시작 후 감소 |
 
-확인할 점:
+결과 요약:
 
-- `0.01` 고정이 초반 수렴은 빠르지만 후반 loss가 흔들리는가
-- `0.001` 고정이 더 안정적으로 수렴하는가
-- decay loss 전략이 초반 속도와 후반 안정성을 동시에 얻는가
+- `adam_baseline` lr=0.001: final validation accuracy 98.50%, final validation loss 0.0499
+- `adam_lr_0_01` lr=0.01: final validation accuracy 98.31%, final validation loss 0.0578
+- `adam_lr_decay`: final validation accuracy 98.37%, best validation accuracy 98.41%, final validation loss 0.0515
+- lr=0.01 고정은 baseline보다 빠르게 시작할 수 있지만 최종 accuracy/loss는 baseline보다 낮았다.
+- decay는 lr=0.01 고정보다 validation loss가 낮고 안정적이지만, lr=0.001 baseline보다 최종 정확도는 낮았다.
 
 ![Learning rate validation accuracy](report_assets/learning_rate_comparison_val_accuracy.svg)
 
@@ -175,14 +186,18 @@ use_batchnorm,use_dropout,dropout_ratio,init_method
 
 ![Learning rate schedule](report_assets/learning_rate_comparison_lr_schedule.svg)
 
+해석: 이번 모델에서는 Adam lr=0.001이 가장 좋은 최종 결과를 냈다. lr=0.01은 큰 학습률로 인해 후반 안정성이 떨어졌고, decay는 큰 lr의 불안정성을 줄였지만 후반 learning rate가 너무 작아져 개선이 일찍 정체된 것으로 보인다.
+
 ---
 
-## 9. 결론 작성 기준
+## 9. 결론
 
-Colab 실행 후 아래 기준으로 결론을 작성한다.
+이번 실험의 핵심 결론은 다음과 같다.
 
-- 최종 정확도 97% 이상이면 과제 목표는 달성한 것으로 본다.
-- optimizer 비교는 정확도보다 loss 감소 속도와 안정성을 우선 해석한다.
-- BatchNorm/Dropout 비교는 train-validation gap과 validation loss를 같이 본다.
-- learning rate 비교는 최종 정확도, 최고 epoch, validation loss 흔들림을 같이 본다.
-- 전체 6개 전략의 순위는 수치표로만 제시하고, 세부 해석은 세 비교 그룹 안에서 따로 작성한다.
+- SGD보다 Adam이 훨씬 빠르게 수렴했다. SGD lr=0.01은 20 epoch 기준 validation accuracy 94.42%로 목표 97%에 도달하지 못했다.
+- BatchNorm 제거는 정확도만 보면 큰 손실이 없었지만, validation loss는 baseline보다 높았다.
+- Dropout 제거는 train accuracy는 높지만 validation loss와 train-validation gap이 커져 과적합 경향이 가장 뚜렷했다.
+- learning rate 비교에서는 Adam lr=0.001 baseline이 final validation accuracy 98.50%, validation loss 0.0499로 가장 안정적이었다.
+- 전체 실험 중 최고 validation accuracy는 `no_batchnorm`의 98.52%였지만, 최종 모델 후보로는 안정성과 일반화를 고려해 `adam_baseline`이 가장 적절하다.
+
+따라서 최종 제출 모델은 `Adam(lr=0.001) + BatchNorm on + Dropout on + He 초기화` 조합을 기준으로 삼는 것이 좋다.
