@@ -11,9 +11,13 @@
 
 ## 1. 실험 목적
 
-MNIST 10-class 분류를 **PyTorch/TensorFlow 없이 NumPy만으로 구현한 신경망**으로 수행하고, 학습률·Dropout·BatchNorm·초기화 전략이 학습 곡선과 테스트 성능에 미치는 영향을 비교한다.
+MNIST 10-class 분류를 **NumPy만으로 구현한 신경망**으로 수행하고, 다음 세 축이 학습 과정과 테스트 성능에 주는 영향을 비교한다.
 
-본 보고서는 `experiment_logs/strategy_run_2026-05-27.txt`에 저장된 20 epoch 실행 로그를 기준으로 작성했다.
+1. SGD vs Adam(ADRM)
+2. BatchNorm, Dropout 유무
+3. learning rate 0.01, 0.001, decay loss 비교
+
+모든 실험에서 **ReLU 활성화 함수와 He 초기화는 고정**한다. 기반 코드는 `67c2996e378527ce7dad540cf549b158ee616b3a` 시점의 `src/` 구현을 그대로 사용하고, 비교 실험 코드는 `mnist_lab_for_test.ipynb` 안에서만 실행한다.
 
 ---
 
@@ -22,134 +26,163 @@ MNIST 10-class 분류를 **PyTorch/TensorFlow 없이 NumPy만으로 구현한 �
 | 구분 | 내용 |
 | --- | --- |
 | **입력** | 784차원 벡터 (28x28 픽셀, 0~1 정규화) |
-| **기본 은닉층** | Affine(512) → BatchNorm → ReLU → Dropout → Affine(256) → BatchNorm → ReLU → Dropout |
-| **출력층** | Affine(10) → Softmax |
+| **기본 은닉층** | Affine(512) -> BatchNorm -> ReLU -> Dropout -> Affine(256) -> BatchNorm -> ReLU -> Dropout |
+| **출력층** | Affine(10) -> Softmax |
 | **손실 함수** | Cross Entropy Loss |
+| **고정 조건** | ReLU, He 초기화 |
 
-기본 구조는 `784 → 512 → 256 → 10`이며, 비교 전략에 따라 BatchNorm, Dropout, 초기화 방식만 변경했다.
+기본 구조는 `784 -> 512 -> 256 -> 10`이다. 비교 전략에 따라 optimizer, learning rate, BatchNorm 사용 여부, Dropout 사용 여부만 바꾼다.
 
 ---
 
-## 3. 학습 설정 및 비교 전략
+## 3. 학습 설정 및 예상 테스트 횟수
 
 공통 설정은 다음과 같다.
 
 | 항목 | 값 |
 | --- | --- |
-| 옵티마이저 | Adam |
 | epochs | 20 |
 | batch_size | 128 |
-| 기본 learning rate | 0.001 |
-| 기본 Dropout 비율 | 0.5 |
-| 기본 BatchNorm momentum | 0.9 |
-| 기본 초기화 | He |
+| train metric 측정 | 고정 train subset 10,000개 |
+| validation/test metric 측정 | 전체 `x_test`, `y_test` |
+| seed | 42 |
+| Dropout 비율 | 0.5 |
+| BatchNorm momentum | 0.9 |
+| 초기화 | He |
 
-비교한 6개 전략은 다음과 같다.
+총 예상 테스트 횟수는 **6회**이다. `adam_baseline`을 세 비교 그룹에서 공통 기준으로 재사용하여 중복 실행을 줄인다.
 
-| 전략 | 변경 내용 | 비교 목적 |
-| --- | --- | --- |
-| `baseline` | Adam lr=0.001, BatchNorm 사용, Dropout 0.5, He 초기화 | 기준 모델 |
-| `high_lr` | learning rate만 0.01로 증가 | 큰 학습률의 수렴 속도와 흔들림 확인 |
-| `lr_decay` | `0.01 * 0.6^epoch`로 learning rate 감소 | 큰 lr로 시작한 뒤 안정화되는지 확인 |
-| `no_dropout` | Dropout 제거 | 과적합 여부 확인 |
-| `no_batchnorm` | BatchNorm 제거 | BatchNorm 유무에 따른 수렴 차이 확인 |
-| `xavier_init` | He 대신 Xavier 초기화 | ReLU 네트워크에서 초기화 차이 확인 |
+| strategy | 비교 그룹 | optimizer | lr | lr schedule | BatchNorm | Dropout | 예상 params |
+| --- | --- | --- | ---: | --- | --- | --- | ---: |
+| `adam_baseline` | 공통 기준 | Adam | 0.001 | 없음 | on | on | 537,354 |
+| `sgd_lr_0_01` | SGD vs Adam | SGD | 0.01 | 없음 | on | on | 537,354 |
+| `no_batchnorm` | BatchNorm 유무 | Adam | 0.001 | 없음 | off | on | 535,818 |
+| `no_dropout` | Dropout 유무 | Adam | 0.001 | 없음 | on | off | 537,354 |
+| `adam_lr_0_01` | 학습률 비교 | Adam | 0.01 | 없음 | on | on | 537,354 |
+| `adam_lr_decay` | 학습률 비교 | Adam | 0.01 시작 | `0.01 * 0.6^epoch` | on | on | 537,354 |
+
+파라미터 수 계산:
+
+- Affine 계층: `784*512+512 + 512*256+256 + 256*10+10 = 535,818`
+- BatchNorm 학습 파라미터: `gamma1/beta1 512*2 + gamma2/beta2 256*2 = 1,536`
+- BatchNorm on 모델: `535,818 + 1,536 = 537,354`
+- Dropout, ReLU, Softmax는 학습 파라미터가 없다.
+- Adam의 `m`, `v`는 optimizer state이므로 모델 파라미터 수에 포함하지 않는다.
 
 ---
 
-## 4. 실험 환경
+## 4. 실행 및 기록 방식
 
-- 실행 환경: Google Colab
-- Python: Colab 기본 Python 3
-- 사용 라이브러리: NumPy, Matplotlib
-- 로그 파일: `experiment_logs/strategy_run_2026-05-27.txt`
-- 시각화 생성 스크립트: `scripts/render_strategy_report_assets.py`
+실행은 Google Colab에서 `mnist_lab_for_test.ipynb`의 비교 실험 셀을 실행한다. 로컬에서는 학습을 실행하지 않는다.
 
-시각화는 아래 명령으로 재생성할 수 있다.
+노트북은 실행 결과를 다음 파일로 저장한다.
 
-```bash
-python3 scripts/render_strategy_report_assets.py
+| 파일 | 내용 |
+| --- | --- |
+| `experiment_logs/grouped_strategy_run_<timestamp>.txt` | 사람이 읽을 수 있는 전체 epoch 로그 |
+| `experiment_logs/grouped_strategy_run_<timestamp>.csv` | strategy, epoch, lr, loss, accuracy, params 등 구조화 로그 |
+| `experiment_logs/grouped_strategy_summary_<timestamp>.md` | 전체 비교 수치표 |
+| `report_assets/*.svg` | 리포트에 붙일 그룹별 비교 그래프 |
+
+CSV에는 다음 항목이 기록된다.
+
+```text
+strategy,label,optimizer,epoch,lr,train_loss,train_acc,val_loss,val_acc,params,
+use_batchnorm,use_dropout,dropout_ratio,init_method
 ```
 
 ---
 
-## 5. 결과
+## 5. 전체 비교
 
-### 5.1 요약 결과
+전체 비교는 그래프 없이 수치표로만 정리한다. Colab 실행 후 `grouped_strategy_summary_<timestamp>.md`의 표를 아래에 붙인다.
 
-| strategy | final val acc | best val acc | best epoch | train acc | val loss | final lr | params |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| baseline | 98.50% | 98.50% | 20 | 99.88% | 0.0499 | 0.001000 | 537,354 |
-| high_lr | 98.48% | 98.48% | 20 | 99.74% | 0.0555 | 0.010000 | 537,354 |
-| lr_decay | 98.37% | 98.41% | 13 | 99.53% | 0.0504 | 0.000001 | 537,354 |
-| no_dropout | 98.17% | 98.36% | 16 | 99.88% | 0.0773 | 0.001000 | 537,354 |
-| no_batchnorm | 98.40% | 98.52% | 16 | 99.85% | 0.0558 | 0.001000 | 535,818 |
-| xavier_init | 98.51% | 98.51% | 20 | 99.87% | 0.0489 | 0.001000 | 537,354 |
-
-모든 전략이 목표 정확도 97%를 넘겼다. 최종 정확도는 `xavier_init`이 98.51%로 가장 높았고, 최고 epoch 기준으로는 `no_batchnorm`이 16 epoch에서 98.52%를 기록했다.
-
-### 5.2 최종·최고 검증 정확도 비교
-
-![Validation accuracy comparison](report_assets/strategy_validation_accuracy.svg)
-
-최종 검증 정확도는 `xavier_init`, `baseline`, `high_lr`가 거의 같은 수준이다. 전략 간 최종 정확도 차이는 최대 0.34%p로 작다. 즉, 이 실험에서는 정확도 숫자 하나보다 loss 안정성, train-validation gap, epoch별 변화를 같이 보는 것이 더 의미 있다.
-
-### 5.3 최종 검증 손실 비교
-
-![Final validation loss](report_assets/strategy_final_validation_loss.svg)
-
-`xavier_init`의 최종 validation loss가 0.0489로 가장 낮고, `baseline`도 0.0499로 거의 동일하다. 반면 `no_dropout`은 최종 정확도도 낮고 validation loss가 0.0773으로 가장 높다.
-
-### 5.4 Train-validation 정확도 차이
-
-![Final train-validation accuracy gap](report_assets/strategy_train_val_gap.svg)
-
-`no_dropout`은 최종 train accuracy가 99.88%로 매우 높지만 validation accuracy는 98.17%에 머물러 gap이 1.71%p로 가장 크다. Dropout을 제거하면 학습 데이터에는 더 잘 맞지만 일반화 성능은 상대적으로 떨어질 수 있음을 보여준다.
-
-### 5.5 Epoch별 validation accuracy
-
-![Validation accuracy curves](report_assets/strategy_validation_accuracy_curves.svg)
-
-대부분의 전략은 5~10 epoch 사이에 98% 근처까지 빠르게 도달하고, 이후에는 작은 폭으로만 개선된다. `lr_decay`는 13 epoch에서 최고점을 찍은 뒤 거의 정체했고, `baseline`과 `xavier_init`은 20 epoch까지 완만하게 상승했다.
-
-### 5.6 Epoch별 validation loss
-
-![Validation loss curves](report_assets/strategy_validation_loss_curves.svg)
-
-`no_dropout`은 초반에 빠르게 loss가 내려가지만 후반 validation loss가 다시 커지거나 흔들리는 구간이 있다. 이는 train loss가 매우 낮은 것과 함께 과적합 가능성을 보여준다. `baseline`, `lr_decay`, `xavier_init`은 후반 validation loss가 0.05 근처에서 비교적 안정적으로 유지된다.
+| strategy | optimizer | final val acc | best val acc | best epoch | train acc | val loss | final lr | params | BN | Dropout |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| `adam_baseline` | Adam | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | 0.001000 | 537,354 | True | True |
+| `sgd_lr_0_01` | SGD | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | 0.010000 | 537,354 | True | True |
+| `no_batchnorm` | Adam | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | 0.001000 | 535,818 | False | True |
+| `no_dropout` | Adam | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | 0.001000 | 537,354 | True | False |
+| `adam_lr_0_01` | Adam | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | 0.010000 | 537,354 | True | True |
+| `adam_lr_decay` | Adam | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | (실행 후 입력) | 537,354 | True | True |
 
 ---
 
-## 6. 해석 및 회고
+## 6. SGD vs Adam(ADRM) 비교
 
-### 학습률 비교
+비교 대상:
 
-`high_lr`는 learning rate를 0.01로 키웠지만 최종 정확도는 98.48%로 `baseline` 98.50%와 거의 차이가 없었다. 최종 validation loss는 `baseline`보다 높아, 이 모델에서는 단순히 학습률을 크게 하는 것이 뚜렷한 이득으로 이어지지 않았다.
+| strategy | optimizer | lr | BatchNorm | Dropout |
+| --- | --- | ---: | --- | --- |
+| `sgd_lr_0_01` | SGD | 0.01 | on | on |
+| `adam_baseline` | Adam | 0.001 | on | on |
 
-`lr_decay`는 초반에 빠르게 성능이 올라갔지만 learning rate가 급격히 작아지면서 후반 개선 폭이 줄었다. 최고 정확도는 13 epoch의 98.41%였고, 이후 거의 정체했다. 감소 스케줄이 안정화에는 도움이 되지만, 이 실험에서는 후반 학습을 너무 빨리 멈추게 만든 것으로 볼 수 있다.
+확인할 점:
 
-### Dropout 비교
+- Adam이 SGD보다 같은 epoch 안에서 더 빠르게 validation loss를 낮추는가
+- SGD가 더 느리지만 안정적으로 수렴하는가
+- 최종 정확도뿐 아니라 epoch별 loss 감소 속도를 함께 비교한다.
 
-`no_dropout`은 train loss가 0.0056까지 내려가 모든 전략 중 가장 낮았다. 그러나 validation loss는 0.0773으로 가장 높고 final validation accuracy도 98.17%로 가장 낮았다. 따라서 Dropout 제거는 학습 데이터 적합은 강화했지만 일반화에는 불리했다.
+![SGD vs Adam validation accuracy](report_assets/optimizer_sgd_vs_adam_val_accuracy.svg)
 
-### BatchNorm 비교
-
-`no_batchnorm`은 BatchNorm을 제거했지만 최고 validation accuracy 98.52%를 기록했다. 다만 최종 validation loss는 0.0558로 `baseline`보다 높았다. 이 결과만 보면 BatchNorm이 반드시 최종 정확도를 높인다고 말하기는 어렵지만, `baseline`이 더 낮은 loss로 안정적인 수렴을 보였다.
-
-### 초기화 비교
-
-`xavier_init`은 최종 validation accuracy 98.51%, validation loss 0.0489로 가장 좋은 최종 결과를 냈다. 일반적으로 ReLU에는 He 초기화가 더 자주 쓰이지만, 이번 구조와 Adam 조합에서는 Xavier 초기화도 충분히 잘 동작했다.
+![SGD vs Adam validation loss](report_assets/optimizer_sgd_vs_adam_val_loss.svg)
 
 ---
 
-## 7. 결론
+## 7. BatchNorm, Dropout 유무 비교
 
-6개 전략 모두 97% 이상의 목표 정확도를 달성했다. 최종 정확도만 보면 전략 간 차이가 작지만, loss와 train-validation gap을 함께 보면 차이가 더 분명하다.
+비교 대상:
 
-- 가장 높은 최종 정확도: `xavier_init` 98.51%
-- 가장 높은 최고 정확도: `no_batchnorm` 98.52% at epoch 16
-- 가장 안정적인 기준 전략: `baseline`
-- 과적합 경향이 가장 뚜렷한 전략: `no_dropout`
-- 학습률 감소 전략: 초반 수렴은 빠르지만 후반 개선이 일찍 정체됨
+| strategy | BatchNorm | Dropout | 목적 |
+| --- | --- | --- | --- |
+| `adam_baseline` | on | on | 기준 |
+| `no_batchnorm` | off | on | BatchNorm 효과 확인 |
+| `no_dropout` | on | off | Dropout 일반화 효과 확인 |
 
-보고서 관점에서는 `baseline`을 최종 모델 후보로 두고, `xavier_init`을 추가 후보로 비교하는 것이 적절하다. `no_dropout` 결과는 Dropout의 일반화 효과를 설명하는 반례 실험으로 활용할 수 있다.
+확인할 점:
+
+- BatchNorm 제거 시 validation loss가 더 흔들리거나 수렴이 느려지는가
+- Dropout 제거 시 train accuracy와 validation accuracy 차이가 커지는가
+- `no_dropout`은 train loss가 빠르게 내려가도 validation loss가 높아지는 과적합 패턴이 있는지 확인한다.
+
+![BatchNorm Dropout validation accuracy](report_assets/regularization_bn_dropout_val_accuracy.svg)
+
+![BatchNorm Dropout validation loss](report_assets/regularization_bn_dropout_val_loss.svg)
+
+![BatchNorm Dropout train validation gap](report_assets/regularization_bn_dropout_train_val_gap.svg)
+
+---
+
+## 8. 학습률 비교
+
+비교 대상:
+
+| strategy | optimizer | lr 설정 | 목적 |
+| --- | --- | --- | --- |
+| `adam_baseline` | Adam | 0.001 고정 | 기준 학습률 |
+| `adam_lr_0_01` | Adam | 0.01 고정 | 큰 학습률 |
+| `adam_lr_decay` | Adam | `0.01 * 0.6^epoch` | 큰 lr로 시작 후 감소 |
+
+확인할 점:
+
+- `0.01` 고정이 초반 수렴은 빠르지만 후반 loss가 흔들리는가
+- `0.001` 고정이 더 안정적으로 수렴하는가
+- decay loss 전략이 초반 속도와 후반 안정성을 동시에 얻는가
+
+![Learning rate validation accuracy](report_assets/learning_rate_comparison_val_accuracy.svg)
+
+![Learning rate validation loss](report_assets/learning_rate_comparison_val_loss.svg)
+
+![Learning rate schedule](report_assets/learning_rate_comparison_lr_schedule.svg)
+
+---
+
+## 9. 결론 작성 기준
+
+Colab 실행 후 아래 기준으로 결론을 작성한다.
+
+- 최종 정확도 97% 이상이면 과제 목표는 달성한 것으로 본다.
+- optimizer 비교는 정확도보다 loss 감소 속도와 안정성을 우선 해석한다.
+- BatchNorm/Dropout 비교는 train-validation gap과 validation loss를 같이 본다.
+- learning rate 비교는 최종 정확도, 최고 epoch, validation loss 흔들림을 같이 본다.
+- 전체 6개 전략의 순위는 수치표로만 제시하고, 세부 해석은 세 비교 그룹 안에서 따로 작성한다.
