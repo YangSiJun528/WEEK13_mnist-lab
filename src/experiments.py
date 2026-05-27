@@ -241,40 +241,12 @@ def format_summary_table(summary):
     return "\n".join(lines)
 
 
-def _set_padded_ylim(ax, values, lower_bound=None, upper_bound=None, pad_ratio=0.15):
-    """값의 실제 변동 범위에 맞춰 y축을 좁혀서 움직임을 크게 보여줍니다."""
-    values = [float(value) for value in values]
-    if not values:
-        return
-
-    min_value = min(values)
-    max_value = max(values)
-    span = max_value - min_value
-    if span == 0:
-        span = max(abs(max_value) * 0.1, 1e-3)
-
-    padding = span * pad_ratio
-    y_min = min_value - padding
-    y_max = max_value + padding
-
-    if lower_bound is not None:
-        y_min = max(lower_bound, y_min)
-    if upper_bound is not None:
-        y_max = min(upper_bound, y_max)
-    if y_min >= y_max:
-        y_min -= span
-        y_max += span
-
-    ax.set_ylim(y_min, y_max)
-
-
-def plot_experiment_grid(results, zoom=1, auto_scale=False):
+def plot_experiment_grid(results, zoom=1):
     """
     전략별 train/test loss와 accuracy를 그립니다.
 
     zoom=5이면 accuracy는 80~100%, zoom=10이면 90~100% 영역을 확대합니다.
     loss도 0 근처를 볼 수 있도록 전체 최대 loss를 zoom 배율로 줄여 표시합니다.
-    auto_scale=True이면 각 subplot의 실제 min/max에 맞춰 y축을 좁힙니다.
     """
     n_rows = len(results)
     fig, axes = plt.subplots(n_rows, 2, figsize=(12, 3 * n_rows), squeeze=False)
@@ -296,83 +268,19 @@ def plot_experiment_grid(results, zoom=1, auto_scale=False):
 
         ax_loss.plot(epochs, [row["train_loss"] for row in history], label="train loss")
         ax_loss.plot(epochs, [row["val_loss"] for row in history], label="test loss")
-        title_suffix = "auto scale" if auto_scale else f"zoom x{zoom}"
-        ax_loss.set_title(f"{result['name']} loss ({title_suffix})")
+        ax_loss.set_title(f"{result['name']} loss (zoom x{zoom})")
         ax_loss.set_xlabel("epoch")
         ax_loss.set_ylabel("loss")
-        if auto_scale:
-            loss_values = []
-            loss_values.extend([row["train_loss"] for row in history])
-            loss_values.extend([row["val_loss"] for row in history])
-            _set_padded_ylim(ax_loss, loss_values, lower_bound=0.0)
-        else:
-            ax_loss.set_ylim(0, loss_top)
+        ax_loss.set_ylim(0, loss_top)
         ax_loss.grid(True, alpha=0.3)
         ax_loss.legend()
 
         ax_acc.plot(epochs, [row["train_acc_pct"] for row in history], label="train acc")
         ax_acc.plot(epochs, [row["val_acc_pct"] for row in history], label="test acc")
-        ax_acc.set_title(f"{result['name']} accuracy ({title_suffix})")
+        ax_acc.set_title(f"{result['name']} accuracy (zoom x{zoom})")
         ax_acc.set_xlabel("epoch")
         ax_acc.set_ylabel("accuracy (%)")
-        if auto_scale:
-            acc_values = []
-            acc_values.extend([row["train_acc_pct"] for row in history])
-            acc_values.extend([row["val_acc_pct"] for row in history])
-            _set_padded_ylim(ax_acc, acc_values, lower_bound=0.0, upper_bound=100.0)
-        else:
-            ax_acc.set_ylim(acc_bottom, 100.0)
-        ax_acc.grid(True, alpha=0.3)
-        ax_acc.legend()
-
-    fig.tight_layout()
-    return fig
-
-
-def plot_experiment_movement(results):
-    """
-    1 epoch 대비 변화량을 그립니다.
-
-    loss는 감소량이 양수로 보이도록 (1 epoch loss - 현재 loss)를 표시하고,
-    accuracy는 (현재 accuracy - 1 epoch accuracy)를 표시합니다.
-    """
-    n_rows = len(results)
-    fig, axes = plt.subplots(n_rows, 2, figsize=(12, 3 * n_rows), squeeze=False)
-
-    for row_index, result in enumerate(results):
-        history = result["history"]
-        epochs = [row["epoch"] for row in history]
-
-        first_train_loss = history[0]["train_loss"]
-        first_val_loss = history[0]["val_loss"]
-        train_loss_drop = [first_train_loss - row["train_loss"] for row in history]
-        val_loss_drop = [first_val_loss - row["val_loss"] for row in history]
-
-        first_train_acc = history[0]["train_acc_pct"]
-        first_val_acc = history[0]["val_acc_pct"]
-        train_acc_gain = [row["train_acc_pct"] - first_train_acc for row in history]
-        val_acc_gain = [row["val_acc_pct"] - first_val_acc for row in history]
-
-        ax_loss = axes[row_index][0]
-        ax_acc = axes[row_index][1]
-
-        ax_loss.axhline(0, color="black", linewidth=1, alpha=0.4)
-        ax_loss.plot(epochs, train_loss_drop, label="train loss drop")
-        ax_loss.plot(epochs, val_loss_drop, label="test loss drop")
-        ax_loss.set_title(f"{result['name']} loss movement")
-        ax_loss.set_xlabel("epoch")
-        ax_loss.set_ylabel("loss drop from epoch 1")
-        _set_padded_ylim(ax_loss, train_loss_drop + val_loss_drop)
-        ax_loss.grid(True, alpha=0.3)
-        ax_loss.legend()
-
-        ax_acc.axhline(0, color="black", linewidth=1, alpha=0.4)
-        ax_acc.plot(epochs, train_acc_gain, label="train acc gain")
-        ax_acc.plot(epochs, val_acc_gain, label="test acc gain")
-        ax_acc.set_title(f"{result['name']} accuracy movement")
-        ax_acc.set_xlabel("epoch")
-        ax_acc.set_ylabel("accuracy gain from epoch 1 (%p)")
-        _set_padded_ylim(ax_acc, train_acc_gain + val_acc_gain)
+        ax_acc.set_ylim(acc_bottom, 100.0)
         ax_acc.grid(True, alpha=0.3)
         ax_acc.legend()
 

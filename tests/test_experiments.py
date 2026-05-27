@@ -6,13 +6,7 @@ import numpy as np
 
 matplotlib.use("Agg")
 
-from experiments import (
-    format_summary_table,
-    plot_experiment_grid,
-    plot_experiment_movement,
-    run_experiments,
-    summarize_results,
-)
+from experiments import format_summary_table, plot_experiment_grid, run_experiments, summarize_results
 
 
 def test_run_experiments_records_history_and_lr_decay():
@@ -104,9 +98,3 @@ def test_summary_and_plot_helpers():
 
     fig = plot_experiment_grid(results, zoom=5)
     assert len(fig.axes) == 2
-
-    auto_fig = plot_experiment_grid(results, auto_scale=True)
-    assert len(auto_fig.axes) == 2
-
-    movement_fig = plot_experiment_movement(results)
-    assert len(movement_fig.axes) == 2
