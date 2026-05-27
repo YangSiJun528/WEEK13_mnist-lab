@@ -182,9 +182,9 @@ use_batchnorm,use_dropout,dropout_ratio,init_method
 
 - `adam_baseline` lr=0.001: final validation accuracy 98.50%, final validation loss 0.0499
 - `adam_lr_0_01` lr=0.01: final validation accuracy 98.31%, final validation loss 0.0578
-- `adam_lr_decay`: final validation accuracy 98.37%, best validation accuracy 98.41%, final validation loss 0.0515
+- `adam_lr_decay`: final validation accuracy 98.37%, best validation accuracy 98.41%, final validation loss 0.0515, final train-validation gap 1.17%p
 - lr=0.01 고정은 baseline보다 빠르게 시작할 수 있지만 최종 accuracy/loss는 baseline보다 낮았다.
-- decay는 lr=0.01 고정보다 validation loss가 낮고 안정적이지만, lr=0.001 baseline보다 최종 정확도는 낮았다. 다만 baseline과 decay의 final accuracy 차이는 0.13%p라서 단일 실행 편차를 고려하면 큰 차이라고 보기는 어렵다.
+- decay는 lr=0.01 고정보다 validation loss가 낮고 안정적이었다. lr=0.001 baseline보다 최종 정확도는 0.13%p 낮지만, 이 차이는 단일 실행 편차 범위에 가깝고 train-validation gap은 baseline 1.38%p보다 낮은 1.17%p였다.
 
 ![Learning rate validation accuracy](report_assets/learning_rate_comparison_val_accuracy.svg)
 
@@ -192,7 +192,7 @@ use_batchnorm,use_dropout,dropout_ratio,init_method
 
 ![Learning rate schedule](report_assets/learning_rate_comparison_lr_schedule.svg)
 
-해석: 이번 모델에서는 Adam lr=0.001이 가장 좋은 최종 결과를 냈다. lr=0.01은 큰 학습률로 인해 후반 안정성이 떨어졌고, decay는 큰 lr의 불안정성을 줄였지만 후반 learning rate가 너무 작아져 개선이 일찍 정체된 것으로 보인다. 단, lr=0.001과 decay의 정확도 차이는 작기 때문에 최종 결론은 accuracy보다 validation loss와 곡선 안정성을 함께 보고 판단한다.
+해석: final validation accuracy만 보면 Adam lr=0.001 baseline이 가장 높다. 하지만 baseline과 decay의 차이는 0.13%p로 작고, decay는 train-validation gap이 더 작아 일반화 안정성 측면에서 더 균형 잡힌 결과로 볼 수 있다. 따라서 정확도 단일 지표를 우선하면 baseline, 편차와 과적합 가능성까지 고려하면 decay가 더 설득력 있는 선택이다.
 
 ---
 
@@ -203,7 +203,7 @@ use_batchnorm,use_dropout,dropout_ratio,init_method
 - SGD보다 Adam이 훨씬 빠르게 수렴했다. SGD lr=0.01은 20 epoch 기준 validation accuracy 94.42%로 목표 97%에 도달하지 못했다.
 - BatchNorm 제거는 정확도만 보면 큰 손실이 없었지만, validation loss는 baseline보다 높았다. 단일 실행 편차를 고려하면 BatchNorm 유무의 정확도 차이는 크게 단정하기 어렵다.
 - Dropout 제거는 train accuracy는 높지만 validation loss와 train-validation gap이 커져 과적합 경향이 가장 뚜렷했다. 특히 3 epoch 이후 gap이 1.7%p 근처까지 벌어져 과적합 설명에 가장 적합하다.
-- learning rate 비교에서는 Adam lr=0.001 baseline이 final validation accuracy 98.50%, validation loss 0.0499로 가장 안정적이었다.
-- 전체 실험 중 최고 validation accuracy는 `no_batchnorm`의 98.52%였지만, `adam_baseline`과의 차이는 0.02%p로 편차 범위에 가깝다. 최종 모델 후보로는 안정성과 일반화를 고려해 `adam_baseline`이 가장 적절하다.
+- learning rate 비교에서는 Adam lr=0.001 baseline이 final validation accuracy 98.50%로 가장 높았지만, `adam_lr_decay`는 final validation accuracy 98.37%로 거의 비슷하면서 train-validation gap이 더 작았다.
+- 전체 실험 중 최고 validation accuracy는 `no_batchnorm`의 98.52%였지만, `adam_baseline`과의 차이는 0.02%p로 편차 범위에 가깝다. 최종 모델 후보는 평가 기준에 따라 달라진다. 최종 accuracy만 우선하면 `adam_baseline`, 일반화 안정성과 과적합 억제까지 고려하면 `adam_lr_decay`가 더 균형 잡힌 선택이다.
 
-따라서 최종 제출 모델은 `Adam(lr=0.001) + BatchNorm on + Dropout on + He 초기화` 조합을 기준으로 삼는 것이 좋다.
+따라서 리포트 결론에서는 `Adam lr decay + BatchNorm on + Dropout on + He 초기화`를 일반화 안정성이 좋은 후보로 제시하고, final validation accuracy 단일 기준에서는 `Adam(lr=0.001) + BatchNorm on + Dropout on + He 초기화`가 근소하게 앞섰다고 정리하는 것이 적절하다.
