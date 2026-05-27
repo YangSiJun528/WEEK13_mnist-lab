@@ -34,7 +34,7 @@ MNIST 10-class 분류를 **NumPy만으로 구현한 신경망**으로 수행하�
 기본 구조는 `784 -> 512 -> 256 -> 10`이다. 비교 전략에 따라 optimizer, learning rate, BatchNorm 사용 여부, Dropout 사용 여부만 바꾼다.
 
 ```mermaid
-flowchart TB
+flowchart TD
     Input["Input: 784 features"]
 
     subgraph Hidden1["Hidden block 1 (512 units)"]
